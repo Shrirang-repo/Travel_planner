@@ -1,0 +1,280 @@
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+#app{display:flex;flex-direction:column;height:780px;background:var(--color-background-tertiary)}
+#topbar{padding:12px 16px;background:var(--color-background-primary);border-bottom:0.5px solid var(--color-border-tertiary);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#topbar h1{font-size:15px;font-weight:500;color:var(--color-text-primary);white-space:nowrap}
+#search-input{flex:1;min-width:120px;height:34px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:0 10px;font-size:13px;background:var(--color-background-secondary);color:var(--color-text-primary);outline:none}
+#search-input:focus{border-color:#378ADD}
+#main{display:flex;flex:1;overflow:hidden}
+#sidebar{width:240px;min-width:240px;background:var(--color-background-primary);border-right:0.5px solid var(--color-border-tertiary);display:flex;flex-direction:column;overflow:hidden}
+#filter-bar{padding:10px 12px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;gap:6px;flex-wrap:wrap}
+.fbtn{font-size:11px;padding:3px 8px;border-radius:20px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer;transition:all 0.15s}
+.fbtn.active{border-color:#378ADD;background:#E6F1FB;color:#0C447C}
+#reel-list{flex:1;overflow-y:auto;padding:8px}
+.reel-card{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px;margin-bottom:8px;cursor:pointer;transition:border-color 0.15s}
+.reel-card:hover{border-color:var(--color-border-primary)}
+.reel-card.selected{border-color:#378ADD;border-width:1px}
+.reel-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reel-place{font-size:11px;color:var(--color-text-secondary);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat-badge{font-size:10px;padding:2px 7px;border-radius:20px;display:inline-block;font-weight:500}
+.cat-food{background:#FAEEDA;color:#633806}
+.cat-stay{background:#E6F1FB;color:#0C447C}
+.cat-sight{background:#EAF3DE;color:#27500A}
+#map-area{flex:1;position:relative}
+#map{width:100%;height:100%}
+#add-panel{background:var(--color-background-primary);border-top:0.5px solid var(--color-border-tertiary);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+#add-panel p{font-size:12px;color:var(--color-text-secondary)}
+#url-row{display:flex;gap:6px}
+#url-input{flex:1;height:32px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:0 10px;font-size:12px;background:var(--color-background-secondary);color:var(--color-text-primary);outline:none}
+#url-input:focus{border-color:#378ADD}
+#add-btn{height:32px;padding:0 12px;border-radius:var(--border-radius-md);border:0.5px solid #378ADD;background:#E6F1FB;color:#0C447C;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap}
+#add-btn:disabled{opacity:0.5;cursor:not-allowed}
+#status-msg{font-size:11px;color:var(--color-text-secondary);min-height:14px}
+#manual-form{display:none;gap:6px;flex-direction:column}
+#manual-form input,#manual-form select{height:30px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:0 8px;font-size:12px;background:var(--color-background-secondary);color:var(--color-text-primary);outline:none;width:100%}
+#manual-form select{cursor:pointer}
+#manual-submit{align-self:flex-end;height:28px;padding:0 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);font-size:12px;cursor:pointer}
+#empty-state{text-align:center;padding:20px 12px;color:var(--color-text-tertiary);font-size:12px;display:none}
+</style>
+
+<h2 class="sr-only">Travel Reel Map — save travel reels and pin them on a map by location</h2>
+<div id="app">
+  <div id="topbar">
+    <h1><i class="ti ti-map-pin" aria-hidden="true" style="margin-right:4px;color:#378ADD"></i>Reel Map</h1>
+    <input id="search-input" type="text" placeholder="Search city or region..."/>
+  </div>
+  <div id="main">
+    <div id="sidebar">
+      <div id="filter-bar">
+        <button class="fbtn active" data-cat="all">All</button>
+        <button class="fbtn" data-cat="food"><i class="ti ti-tools-kitchen-2" aria-hidden="true"></i> Food</button>
+        <button class="fbtn" data-cat="stay"><i class="ti ti-bed" aria-hidden="true"></i> Stay</button>
+        <button class="fbtn" data-cat="sightseeing"><i class="ti ti-camera" aria-hidden="true"></i> Places</button>
+      </div>
+      <div id="reel-list"></div>
+      <div id="empty-state">No reels yet. Add one below!</div>
+    </div>
+    <div id="map-area">
+      <div id="map"></div>
+    </div>
+  </div>
+  <div id="add-panel">
+    <p><i class="ti ti-link" aria-hidden="true" style="margin-right:4px"></i>Paste a reel URL — AI will extract the location automatically</p>
+    <div id="url-row">
+      <input id="url-input" type="text" placeholder="https://instagram.com/reel/... or YouTube Shorts URL"/>
+      <button id="add-btn">Analyze &amp; Pin</button>
+    </div>
+    <div id="status-msg"></div>
+    <div id="manual-form">
+      <input id="m-title" placeholder="Reel title / what it's about"/>
+      <input id="m-place" placeholder="Place name (e.g. Dal Lake, Kashmir)"/>
+      <div style="display:flex;gap:6px">
+        <input id="m-city" placeholder="City / region" style="flex:1"/>
+        <select id="m-cat">
+          <option value="food">Food</option>
+          <option value="stay">Stay</option>
+          <option value="sightseeing">Sightseeing</option>
+        </select>
+      </div>
+      <button id="manual-submit">Add Pin</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEMO_REELS=[
+  {id:1,title:"Best wazwan you'll ever have",place:"Ahdoos Restaurant, Srinagar",city:"Kashmir",cat:"food",lat:34.0837,lng:74.7973,url:"https://instagram.com/reel/demo1"},
+  {id:2,title:"Floating houseboat stay on Dal Lake",place:"Dal Lake Houseboat, Srinagar",city:"Kashmir",cat:"stay",lat:34.1073,lng:74.8395,url:"https://instagram.com/reel/demo2"},
+  {id:3,title:"Must visit — Gulmarg meadows at sunrise",place:"Gulmarg, Kashmir",city:"Kashmir",cat:"sightseeing",lat:34.0494,lng:74.3805,url:"https://instagram.com/reel/demo3"},
+  {id:4,title:"Palolem beach shack — fresh catch daily",place:"Palolem Beach, Goa",city:"Goa",cat:"food",lat:15.0100,lng:74.0230,url:"https://instagram.com/reel/demo4"},
+  {id:5,title:"Sunset view from Dudhsagar trail",place:"Dudhsagar Falls, Goa",city:"Goa",cat:"sightseeing",lat:15.3144,lng:74.3147,url:"https://instagram.com/reel/demo5"},
+  {id:6,title:"Best chai and maggi before Rohtang",place:"Old Manali Café",city:"Manali",cat:"food",lat:32.2432,lng:77.1892,url:"https://instagram.com/reel/demo6"},
+  {id:7,title:"Snow trek to Solang Valley",place:"Solang Valley, Manali",city:"Manali",cat:"sightseeing",lat:32.3192,lng:77.1554,url:"https://instagram.com/reel/demo7"}
+];
+
+let reels=[...DEMO_REELS];
+let nextId=100;
+let activeFilter="all";
+let selectedId=null;
+let markers={};
+
+const map=L.map("map").setView([22.5,80],4.5);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap"}).addTo(map);
+
+function catColor(cat){
+  if(cat==="food")return{pin:"#BA7517",bg:"#FAEEDA",text:"#633806"};
+  if(cat==="stay")return{pin:"#185FA5",bg:"#E6F1FB",text:"#0C447C"};
+  return{pin:"#3B6D11",bg:"#EAF3DE",text:"#27500A"};
+}
+
+function catLabel(cat){
+  if(cat==="food")return"Food";
+  if(cat==="stay")return"Stay";
+  return"Sightseeing";
+}
+
+function makeIcon(cat){
+  const c=catColor(cat);
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36" viewBox="0 0 28 36"><path d="M14 0C6.27 0 0 6.27 0 14c0 9.33 14 22 14 22S28 23.33 28 14C28 6.27 21.73 0 14 0z" fill="${c.pin}"/><circle cx="14" cy="14" r="6" fill="white"/></svg>`;
+  return L.divIcon({html:svg,className:"",iconSize:[28,36],iconAnchor:[14,36],popupAnchor:[0,-36]});
+}
+
+function addMarker(reel){
+  const m=L.marker([reel.lat,reel.lng],{icon:makeIcon(reel.cat)}).addTo(map);
+  const c=catColor(reel.cat);
+  m.bindPopup(`<div style="min-width:180px;font-family:sans-serif"><div style="font-size:13px;font-weight:500;margin-bottom:4px">${reel.place}</div><div style="font-size:11px;color:#666;margin-bottom:6px">${reel.title}</div><span style="font-size:10px;padding:2px 8px;border-radius:20px;background:${c.bg};color:${c.text};font-weight:500">${catLabel(reel.cat)}</span><br/><a href="${reel.url}" target="_blank" style="font-size:11px;color:#378ADD;display:inline-block;margin-top:6px">Watch reel ↗</a></div>`);
+  m.on("click",()=>selectReel(reel.id));
+  markers[reel.id]=m;
+}
+
+function renderList(){
+  const list=document.getElementById("reel-list");
+  const empty=document.getElementById("empty-state");
+  const search=document.getElementById("search-input").value.trim().toLowerCase();
+  const visible=reels.filter(r=>{
+    const matchCat=activeFilter==="all"||r.cat===activeFilter;
+    const matchSearch=!search||r.city.toLowerCase().includes(search)||r.place.toLowerCase().includes(search)||r.title.toLowerCase().includes(search);
+    return matchCat&&matchSearch;
+  });
+  list.innerHTML="";
+  if(visible.length===0){empty.style.display="block";}else{empty.style.display="none";}
+  visible.forEach(r=>{
+    const c=catColor(r.cat);
+    const div=document.createElement("div");
+    div.className="reel-card"+(selectedId===r.id?" selected":"");
+    div.dataset.id=r.id;
+    div.innerHTML=`<div class="reel-title">${r.title}</div><div class="reel-place"><i class="ti ti-map-pin" style="font-size:11px;margin-right:3px"></i>${r.place}</div><span class="cat-badge" style="background:${c.bg};color:${c.text}">${catLabel(r.cat)}</span>`;
+    div.addEventListener("click",()=>selectReel(r.id));
+    list.appendChild(div);
+  });
+  Object.keys(markers).forEach(id=>{
+    const show=visible.find(r=>r.id==id);
+    if(show){map.addLayer(markers[id]);}else{map.removeLayer(markers[id]);}
+  });
+  if(search&&visible.length>0){
+    const lats=visible.map(r=>r.lat);
+    const lngs=visible.map(r=>r.lng);
+    const pad=1.5;
+    map.fitBounds([[Math.min(...lats)-pad,Math.min(...lngs)-pad],[Math.max(...lats)+pad,Math.max(...lngs)+pad]]);
+  }
+}
+
+function selectReel(id){
+  selectedId=id;
+  const r=reels.find(x=>x.id===id);
+  if(r){map.setView([r.lat,r.lng],12);markers[id]&&markers[id].openPopup();}
+  renderList();
+}
+
+reels.forEach(r=>addMarker(r));
+renderList();
+
+document.querySelectorAll(".fbtn").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".fbtn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    activeFilter=btn.dataset.cat;
+    renderList();
+  });
+});
+
+document.getElementById("search-input").addEventListener("input",renderList);
+
+const CITY_COORDS={
+  kashmir:{lat:34.0837,lng:74.7973},goa:{lat:15.2993,lng:74.1240},
+  manali:{lat:32.2432,lng:77.1892},mumbai:{lat:19.0760,lng:72.8777},
+  delhi:{lat:28.6139,lng:77.2090},bangalore:{lat:12.9716,lng:77.5946},
+  bengaluru:{lat:12.9716,lng:77.5946},jaipur:{lat:26.9124,lng:75.7873},
+  kerala:{lat:10.8505,lng:76.2711},ladakh:{lat:34.1526,lng:77.5771}
+};
+
+function geocodePlace(placeName){
+  const key=placeName.toLowerCase().trim();
+  for(const k in CITY_COORDS){if(key.includes(k))return CITY_COORDS[k];}
+  return null;
+}
+
+function setStatus(msg,color){
+  const el=document.getElementById("status-msg");
+  el.textContent=msg;
+  el.style.color=color||"var(--color-text-secondary)";
+}
+
+function showManualForm(prefill){
+  const mf=document.getElementById("manual-form");
+  mf.style.display="flex";
+  if(prefill){
+    if(prefill.title)document.getElementById("m-title").value=prefill.title;
+    if(prefill.place)document.getElementById("m-place").value=prefill.place;
+    if(prefill.city)document.getElementById("m-city").value=prefill.city;
+  }
+}
+
+document.getElementById("add-btn").addEventListener("click",async()=>{
+  const url=document.getElementById("url-input").value.trim();
+  if(!url){setStatus("Paste a reel URL first","var(--color-text-danger)");return;}
+  const btn=document.getElementById("add-btn");
+  btn.disabled=true;
+  setStatus("Analyzing reel...");
+  const apiKey=localStorage.getItem("trm_api_key");
+  if(!apiKey){
+    setStatus("No API key found — enter details manually","var(--color-text-secondary)");
+    showManualForm({title:url.split("/").pop()||"My reel"});
+    btn.disabled=false;
+    return;
+  }
+  try{
+    const resp=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",max_tokens:400,
+        system:"You are a travel reel location extractor. Given a URL or title, infer the likely travel location. Return ONLY valid JSON, no markdown, no explanation. Keys: title (string, describe what reel is about in <8 words), place (specific place name), city (city or region), country (country), cat (one of: food, stay, sightseeing), lat (number), lng (number), desc (one line what to expect).",
+        messages:[{role:"user",content:`Extract location from this reel URL: ${url}`}]
+      })
+    });
+    const data=await resp.json();
+    const raw=data.content?.find(b=>b.type==="text")?.text||"";
+    const clean=raw.replace(/```json|```/g,"").trim();
+    const parsed=JSON.parse(clean);
+    const coords=geocodePlace(parsed.city)||geocodePlace(parsed.place)||{lat:parsed.lat,lng:parsed.lng};
+    const newReel={id:nextId++,title:parsed.title||"Travel reel",place:parsed.place||parsed.city,city:parsed.city,cat:parsed.cat||"sightseeing",lat:coords.lat,lng:coords.lng,url};
+    reels.push(newReel);
+    addMarker(newReel);
+    selectReel(newReel.id);
+    renderList();
+    document.getElementById("url-input").value="";
+    setStatus("Pinned: "+newReel.place,"#3B6D11");
+  }catch(e){
+    setStatus("Could not extract automatically — fill in manually","var(--color-text-secondary)");
+    showManualForm({});
+  }
+  btn.disabled=false;
+});
+
+document.getElementById("manual-submit").addEventListener("click",()=>{
+  const title=document.getElementById("m-title").value.trim();
+  const place=document.getElementById("m-place").value.trim();
+  const city=document.getElementById("m-city").value.trim();
+  const cat=document.getElementById("m-cat").value;
+  const url=document.getElementById("url-input").value.trim();
+  if(!place||!city){setStatus("Enter place and city","var(--color-text-danger)");return;}
+  const coords=geocodePlace(city)||geocodePlace(place)||{lat:20.5937,lng:78.9629};
+  const newReel={id:nextId++,title:title||place,place,city,cat,lat:coords.lat+(Math.random()-0.5)*0.08,lng:coords.lng+(Math.random()-0.5)*0.08,url:url||"#"};
+  reels.push(newReel);
+  addMarker(newReel);
+  selectReel(newReel.id);
+  renderList();
+  document.getElementById("manual-form").style.display="none";
+  document.getElementById("m-title").value="";
+  document.getElementById("m-place").value="";
+  document.getElementById("m-city").value="";
+  document.getElementById("url-input").value="";
+  setStatus("Pinned: "+newReel.place,"#3B6D11");
+});
+</script>
