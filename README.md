@@ -21,7 +21,7 @@ python3 -m http.server 8000
 ```
 Then visit `http://localhost:8000`.
 
-On first "Analyze & Pin," you'll be prompted for an Anthropic API key. It's stored only in your browser's `localStorage` — never committed or sent anywhere except directly to the Anthropic API.
+On first "Analyze & Pin," you'll be prompted for an  API key. It's stored only in your browser's `localStorage` — never committed or sent anywhere except directly to the Anthropic API.
 
 ## Notes
 This is a portfolio/demo project — the API key prompt is fine for personal local use, but isn't a pattern for a production app (a real deployment would proxy the API call through a backend to avoid exposing a key client-side at all).
