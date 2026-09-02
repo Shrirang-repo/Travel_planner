@@ -1,92 +1,3 @@
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font-sans)}
-#app{display:flex;flex-direction:column;height:780px;background:var(--color-background-tertiary)}
-#topbar{padding:12px 16px;background:var(--color-background-primary);border-bottom:0.5px solid var(--color-border-tertiary);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-#topbar h1{font-size:15px;font-weight:500;color:var(--color-text-primary);white-space:nowrap}
-#search-input{flex:1;min-width:120px;height:34px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:0 10px;font-size:13px;background:var(--color-background-secondary);color:var(--color-text-primary);outline:none}
-#search-input:focus{border-color:#378ADD}
-#main{display:flex;flex:1;overflow:hidden}
-#sidebar{width:240px;min-width:240px;background:var(--color-background-primary);border-right:0.5px solid var(--color-border-tertiary);display:flex;flex-direction:column;overflow:hidden}
-#filter-bar{padding:10px 12px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;gap:6px;flex-wrap:wrap}
-.fbtn{font-size:11px;padding:3px 8px;border-radius:20px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer;transition:all 0.15s}
-.fbtn.active{border-color:#378ADD;background:#E6F1FB;color:#0C447C}
-#reel-list{flex:1;overflow-y:auto;padding:8px}
-.reel-card{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px;margin-bottom:8px;cursor:pointer;transition:border-color 0.15s}
-.reel-card:hover{border-color:var(--color-border-primary)}
-.reel-card.selected{border-color:#378ADD;border-width:1px}
-.reel-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.reel-place{font-size:11px;color:var(--color-text-secondary);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cat-badge{font-size:10px;padding:2px 7px;border-radius:20px;display:inline-block;font-weight:500}
-.cat-food{background:#FAEEDA;color:#633806}
-.cat-stay{background:#E6F1FB;color:#0C447C}
-.cat-sight{background:#EAF3DE;color:#27500A}
-#map-area{flex:1;position:relative}
-#map{width:100%;height:100%}
-#add-panel{background:var(--color-background-primary);border-top:0.5px solid var(--color-border-tertiary);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
-#add-panel p{font-size:12px;color:var(--color-text-secondary)}
-#url-row{display:flex;gap:6px}
-#url-input{flex:1;height:32px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:0 10px;font-size:12px;background:var(--color-background-secondary);color:var(--color-text-primary);outline:none}
-#url-input:focus{border-color:#378ADD}
-#add-btn{height:32px;padding:0 12px;border-radius:var(--border-radius-md);border:0.5px solid #378ADD;background:#E6F1FB;color:#0C447C;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap}
-#add-btn:disabled{opacity:0.5;cursor:not-allowed}
-#status-msg{font-size:11px;color:var(--color-text-secondary);min-height:14px}
-#manual-form{display:none;gap:6px;flex-direction:column}
-#manual-form input,#manual-form select{height:30px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:0 8px;font-size:12px;background:var(--color-background-secondary);color:var(--color-text-primary);outline:none;width:100%}
-#manual-form select{cursor:pointer}
-#manual-submit{align-self:flex-end;height:28px;padding:0 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);font-size:12px;cursor:pointer}
-#empty-state{text-align:center;padding:20px 12px;color:var(--color-text-tertiary);font-size:12px;display:none}
-</style>
-
-<h2 class="sr-only">Travel Reel Map — save travel reels and pin them on a map by location</h2>
-<div id="app">
-  <div id="topbar">
-    <h1><i class="ti ti-map-pin" aria-hidden="true" style="margin-right:4px;color:#378ADD"></i>Reel Map</h1>
-    <input id="search-input" type="text" placeholder="Search city or region..."/>
-  </div>
-  <div id="main">
-    <div id="sidebar">
-      <div id="filter-bar">
-        <button class="fbtn active" data-cat="all">All</button>
-        <button class="fbtn" data-cat="food"><i class="ti ti-tools-kitchen-2" aria-hidden="true"></i> Food</button>
-        <button class="fbtn" data-cat="stay"><i class="ti ti-bed" aria-hidden="true"></i> Stay</button>
-        <button class="fbtn" data-cat="sightseeing"><i class="ti ti-camera" aria-hidden="true"></i> Places</button>
-      </div>
-      <div id="reel-list"></div>
-      <div id="empty-state">No reels yet. Add one below!</div>
-    </div>
-    <div id="map-area">
-      <div id="map"></div>
-    </div>
-  </div>
-  <div id="add-panel">
-    <p><i class="ti ti-link" aria-hidden="true" style="margin-right:4px"></i>Paste a reel URL — AI will extract the location automatically</p>
-    <div id="url-row">
-      <input id="url-input" type="text" placeholder="https://instagram.com/reel/... or YouTube Shorts URL"/>
-      <button id="add-btn">Analyze &amp; Pin</button>
-    </div>
-    <div id="status-msg"></div>
-    <div id="manual-form">
-      <input id="m-title" placeholder="Reel title / what it's about"/>
-      <input id="m-place" placeholder="Place name (e.g. Dal Lake, Kashmir)"/>
-      <div style="display:flex;gap:6px">
-        <input id="m-city" placeholder="City / region" style="flex:1"/>
-        <select id="m-cat">
-          <option value="food">Food</option>
-          <option value="stay">Stay</option>
-          <option value="sightseeing">Sightseeing</option>
-        </select>
-      </div>
-      <button id="manual-submit">Add Pin</button>
-    </div>
-  </div>
-</div>
-
-<script>
 const DEMO_REELS=[
   {id:1,title:"Best wazwan you'll ever have",place:"Ahdoos Restaurant, Srinagar",city:"Kashmir",cat:"food",lat:34.0837,lng:74.7973,url:"https://instagram.com/reel/demo1"},
   {id:2,title:"Floating houseboat stay on Dal Lake",place:"Dal Lake Houseboat, Srinagar",city:"Kashmir",cat:"stay",lat:34.1073,lng:74.8395,url:"https://instagram.com/reel/demo2"},
@@ -97,8 +8,20 @@ const DEMO_REELS=[
   {id:7,title:"Snow trek to Solang Valley",place:"Solang Valley, Manali",city:"Manali",cat:"sightseeing",lat:32.3192,lng:77.1554,url:"https://instagram.com/reel/demo7"}
 ];
 
-let reels=[...DEMO_REELS];
-let nextId=100;
+function loadReels(){
+  const saved=localStorage.getItem("trm_reels");
+  if(saved){
+    try{return JSON.parse(saved);}catch(e){return [...DEMO_REELS];}
+  }
+  return [...DEMO_REELS];
+}
+
+function saveReels(){
+  localStorage.setItem("trm_reels",JSON.stringify(reels));
+}
+
+let reels=loadReels();
+let nextId=Math.max(100,...reels.map(r=>r.id+1));
 let activeFilter="all";
 let selectedId=null;
 let markers={};
@@ -202,7 +125,7 @@ function geocodePlace(placeName){
 function setStatus(msg,color){
   const el=document.getElementById("status-msg");
   el.textContent=msg;
-  el.style.color=color||"var(--color-text-secondary)";
+  el.style.color=color||"var(--text-secondary)";
 }
 
 function showManualForm(prefill){
@@ -215,15 +138,24 @@ function showManualForm(prefill){
   }
 }
 
+async function getOrPromptApiKey(){
+  let apiKey=localStorage.getItem("trm_api_key");
+  if(!apiKey){
+    apiKey=prompt("Enter your Anthropic API key (stored only in this browser's localStorage):");
+    if(apiKey)localStorage.setItem("trm_api_key",apiKey.trim());
+  }
+  return apiKey;
+}
+
 document.getElementById("add-btn").addEventListener("click",async()=>{
   const url=document.getElementById("url-input").value.trim();
-  if(!url){setStatus("Paste a reel URL first","var(--color-text-danger)");return;}
+  if(!url){setStatus("Paste a reel URL first","var(--text-danger)");return;}
   const btn=document.getElementById("add-btn");
   btn.disabled=true;
   setStatus("Analyzing reel...");
-  const apiKey=localStorage.getItem("trm_api_key");
+  const apiKey=await getOrPromptApiKey();
   if(!apiKey){
-    setStatus("No API key found — enter details manually","var(--color-text-secondary)");
+    setStatus("No API key found — enter details manually","var(--text-secondary)");
     showManualForm({title:url.split("/").pop()||"My reel"});
     btn.disabled=false;
     return;
@@ -248,10 +180,11 @@ document.getElementById("add-btn").addEventListener("click",async()=>{
     addMarker(newReel);
     selectReel(newReel.id);
     renderList();
+    saveReels();
     document.getElementById("url-input").value="";
     setStatus("Pinned: "+newReel.place,"#3B6D11");
   }catch(e){
-    setStatus("Could not extract automatically — fill in manually","var(--color-text-secondary)");
+    setStatus("Could not extract automatically — fill in manually","var(--text-secondary)");
     showManualForm({});
   }
   btn.disabled=false;
@@ -263,13 +196,14 @@ document.getElementById("manual-submit").addEventListener("click",()=>{
   const city=document.getElementById("m-city").value.trim();
   const cat=document.getElementById("m-cat").value;
   const url=document.getElementById("url-input").value.trim();
-  if(!place||!city){setStatus("Enter place and city","var(--color-text-danger)");return;}
+  if(!place||!city){setStatus("Enter place and city","var(--text-danger)");return;}
   const coords=geocodePlace(city)||geocodePlace(place)||{lat:20.5937,lng:78.9629};
   const newReel={id:nextId++,title:title||place,place,city,cat,lat:coords.lat+(Math.random()-0.5)*0.08,lng:coords.lng+(Math.random()-0.5)*0.08,url:url||"#"};
   reels.push(newReel);
   addMarker(newReel);
   selectReel(newReel.id);
   renderList();
+  saveReels();
   document.getElementById("manual-form").style.display="none";
   document.getElementById("m-title").value="";
   document.getElementById("m-place").value="";
@@ -277,4 +211,3 @@ document.getElementById("manual-submit").addEventListener("click",()=>{
   document.getElementById("url-input").value="";
   setStatus("Pinned: "+newReel.place,"#3B6D11");
 });
-</script>

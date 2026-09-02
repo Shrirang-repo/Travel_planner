@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Travel Reel Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"/>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<h2 class="sr-only">Travel Reel Map — save travel reels and pin them on a map by location</h2>
+<div id="app">
+  <div id="topbar">
+    <h1><i class="ti ti-map-pin" aria-hidden="true" style="margin-right:4px;color:#378ADD"></i>Reel Map</h1>
+    <input id="search-input" type="text" placeholder="Search city or region..."/>
+  </div>
+  <div id="main">
+    <div id="sidebar">
+      <div id="filter-bar">
+        <button class="fbtn active" data-cat="all">All</button>
+        <button class="fbtn" data-cat="food"><i class="ti ti-tools-kitchen-2" aria-hidden="true"></i> Food</button>
+        <button class="fbtn" data-cat="stay"><i class="ti ti-bed" aria-hidden="true"></i> Stay</button>
+        <button class="fbtn" data-cat="sightseeing"><i class="ti ti-camera" aria-hidden="true"></i> Places</button>
+      </div>
+      <div id="reel-list"></div>
+      <div id="empty-state">No reels yet. Add one below!</div>
+    </div>
+    <div id="map-area">
+      <div id="map"></div>
+    </div>
+  </div>
+  <div id="add-panel">
+    <p><i class="ti ti-link" aria-hidden="true" style="margin-right:4px"></i>Paste a reel URL — AI will extract the location automatically</p>
+    <div id="url-row">
+      <input id="url-input" type="text" placeholder="https://instagram.com/reel/... or YouTube Shorts URL"/>
+      <button id="add-btn">Analyze &amp; Pin</button>
+    </div>
+    <div id="status-msg"></div>
+    <div id="manual-form">
+      <input id="m-title" placeholder="Reel title / what it's about"/>
+      <input id="m-place" placeholder="Place name (e.g. Dal Lake, Kashmir)"/>
+      <div style="display:flex;gap:6px">
+        <input id="m-city" placeholder="City / region" style="flex:1"/>
+        <select id="m-cat">
+          <option value="food">Food</option>
+          <option value="stay">Stay</option>
+          <option value="sightseeing">Sightseeing</option>
+        </select>
+      </div>
+      <button id="manual-submit">Add Pin</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
